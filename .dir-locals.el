@@ -1,0 +1,6 @@
+((nil . ((cider-clojure-cli-aliases        . ":dev")
+         (cider-preferred-build-tool       . clojure-cli)
+         (cider-default-cljs-repl          . custom)
+         (cider-custom-cljs-repl-init-form . "(do (user/cljs-repl))")
+         (cider-jack-in-cljs-nrepl-middlewares . ("shadow.cljs.devtools.server.nrepl/middleware"))
+         (cider-jack-in-cljs-dependencies . nil))))
