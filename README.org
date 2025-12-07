@@ -4,3 +4,5 @@
 * Nelumbo
 
 The elegant lotus.
+
+Require Java version >= 17.

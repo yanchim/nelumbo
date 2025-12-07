@@ -1,9 +1,10 @@
 node_modules/
-public/js
+resources/public/js
 
 /target
 /checkouts
 /src/gen
+config.edn
 
 .cpcache/
 
