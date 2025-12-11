@@ -1,5 +1,6 @@
 (ns nelumbo.clj.server
   (:require
+   [nelumbo.clj.core :as core]
    [clojure.spec.alpha :as s]
    [clojure.tools.logging :as log]
    [muuntaja.core :as m]
@@ -34,19 +35,23 @@
   (let [{:keys [name tun ss cn]} query
         config ""
         password ""]
-    (if cn
-      {:status 200
-       :body {:config config}}
-      {:status 200
-       :body (update-in
-              config
-              [:outbounds]
-              (fn [outbounds]
-                (map (fn [outbound]
-                       (if (= (:type outbound) "shadowtls")
-                         (assoc outbound :password password)
-                         outbound))
-                     outbounds)))})))
+    {:status 200
+     :body (-> (core/read-resource "vless-vision-reality/client.edn")
+               clojure.edn/read-string)}
+    ;; (if cn
+    ;;   {:status 200
+    ;;    :body {:config config}}
+    ;;   {:status 200
+    ;;    :body (update-in
+    ;;           config
+    ;;           [:outbounds]
+    ;;           (fn [outbounds]
+    ;;             (map (fn [outbound]
+    ;;                    (if (= (:type outbound) "shadowtls")
+    ;;                      (assoc outbound :password password)
+    ;;                      outbound))
+    ;;                  outbounds)))})
+    ))
 
 (def root-routes
   [""
@@ -69,7 +74,7 @@
   ["/api" {:tags ["API"]}
    ["/subscribe" {:get {:parameters {:query ::subscribe}
                         :responses {200 {}}
-                        :handler (fn [{{query :query}:parameters}]
+                        :handler (fn [{{query :query} :parameters}]
                                    (subscribe-get query))}}]])
 
 (def secure-routes
@@ -122,7 +127,7 @@
   (clojure.reflect/reflect @server)
   (let [connector (first (.getConnectors @server))
         port      (.getLocalPort connector)]
-    (println "Server running on port:" port))
+    (format "Server running on port: %d" port))
   (.stop @server)
   (.start @server)
   (stop!)

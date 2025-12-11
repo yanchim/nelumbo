@@ -1,0 +1,28 @@
+{:log
+ {:loglevel :warning}
+ :routing
+ {:rules
+  [{:ip ["geoip:private"] :outboundTag "direct"}]}
+ :inbounds
+ [{:listen "127.0.0.1"
+   :port 10808
+   :protocol "socks"
+   :settings {:udp true}
+   :sniffing {:enabled true :destOverride ["http" "tls" "quic"] :routeOnly true}}]
+ :outbounds
+ [{:protocol "vless"
+   :settings {:vnext
+              [{:address nil
+                :port nil
+                :users [{:id nil :encryption "none" :flow "xtls-rprx-vision"}]}]}
+   :streamSettings {:network "tcp"
+                    :security "reality"
+                    :realitySettings
+                    {:fingerprint "chrome"
+                     :serverName nil
+                     :publicKey nil
+                     :spiderX nil
+                     :shortId nil}}
+   :tag "proxy"}
+  {:protocol "freedom"
+   :tag "direct"}]}

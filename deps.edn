@@ -2,7 +2,7 @@
  ["src" "resources"]
 
  :deps
- {org.clojure/clojure {:mvn/version "1.12.3"}
+ {org.clojure/clojure {:mvn/version "1.12.4"}
   org.clojure/tools.logging {:mvn/version "1.3.0"}
   ch.qos.logback/logback-classic {:mvn/version "1.5.21"}
   metosin/jsonista {:mvn/version "0.3.13"}
@@ -14,5 +14,5 @@
  :aliases
  {:dev
   {:extra-paths ["dev"]
-   :extra-deps {org.clojure/clojurescript {:mvn/version "1.12.116"}
+   :extra-deps {org.clojure/clojurescript {:mvn/version "1.12.134"}
                 thheller/shadow-cljs {:mvn/version "3.3.3"}}}}}

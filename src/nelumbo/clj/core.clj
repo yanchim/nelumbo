@@ -1,6 +1,5 @@
 (ns nelumbo.clj.core
   (:require
-   [clojure.edn :as edn]
    [clojure.java.io :as io]))
 
 (defn read-resource [path]
@@ -11,3 +10,8 @@
 (defn -main [& args]
   (println :hello "world")
   :core)
+
+(comment
+  (-> (read-resource "vless-vision-reality/client.edn")
+      clojure.edn/read-string)
+  :done)
