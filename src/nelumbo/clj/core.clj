@@ -12,6 +12,10 @@
   :core)
 
 (comment
-  (-> (read-resource "vless-vision-reality/client.edn")
+  (-> (read-resource "xray-vless-vision-reality/client.edn")
       clojure.edn/read-string)
+
+  (->> (-> (read-resource "client.json")
+           (clojure.data.json/read-str :key-fn keyword))
+       (spit "client.edn"))
   :done)
