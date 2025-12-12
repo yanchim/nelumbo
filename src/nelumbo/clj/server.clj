@@ -15,16 +15,17 @@
    [ring.adapter.jetty :as jetty]))
 
 (s/def ::name string?)
-(s/def ::tun boolean?)
-(s/def ::ss boolean?)
+(s/def ::shadowtls boolean?)
+(s/def ::vless boolean?)
 (s/def ::cn boolean?)
+(s/def ::v1_11 boolean?)
 
 (s/def ::subscribe
   (s/keys :req-un [::name]
-          :opt-un [::tun ::ss ::cn]))
+          :opt-un [::shadowtls ::vless ::cn ::v1_11]))
 
 (comment
-  (s/valid? ::subscribe {::name "tong" ::tun 1})
+  (s/valid? ::subscribe {::name "tong"})
   :done)
 
 (defn- ping [_]
@@ -32,11 +33,14 @@
    :body {:hello "world"}})
 
 (defn- subscribe-get [query]
-  (let [{:keys [name tun ss cn]} query
-        config ""
+  (println query)
+  (let [{:keys [name shadowtls vless cn v1_11]} query
+        config (cond
+                 :else
+                 (core/read-resource "proxy/singbox/shadowtls/client.edn"))
         password ""]
     {:status 200
-     :body (-> (core/read-resource "vless-vision-reality/client.edn")
+     :body (-> config
                clojure.edn/read-string)}
     ;; (if cn
     ;;   {:status 200
