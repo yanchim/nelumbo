@@ -22,10 +22,10 @@
 
 (s/def ::subscribe
   (s/keys :req-un [::name]
-          :opt-un [::shadowtls ::vless ::cn ::v1_11]))
+          :opt-un [::shadowtls ::vless]))
 
 (comment
-  (s/valid? ::subscribe {::name "tong"})
+  (s/valid? ::subscribe {:name "tong" :shadowtls true})
   :done)
 
 (defn- ping [_]
@@ -33,8 +33,7 @@
    :body {:hello "world"}})
 
 (defn- subscribe-get [query]
-  (println query)
-  (let [{:keys [name shadowtls vless cn v1_11]} query
+  (let [{:keys [name shadowtls vless]} query
         config (cond
                  :else
                  (core/read-resource "proxy/singbox/shadowtls/client.edn"))
@@ -129,6 +128,7 @@
   (start!)
   (type @server)
   (clojure.reflect/reflect @server)
+  (.getServerInfo @server)
   (let [connector (first (.getConnectors @server))
         port      (.getLocalPort connector)]
     (format "Server running on port: %d" port))

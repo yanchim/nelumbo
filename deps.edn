@@ -15,4 +15,4 @@
  {:dev
   {:extra-paths ["dev"]
    :extra-deps {org.clojure/clojurescript {:mvn/version "1.12.134"}
-                thheller/shadow-cljs {:mvn/version "3.3.3"}}}}}
+                thheller/shadow-cljs {:mvn/version "3.3.4"}}}}}

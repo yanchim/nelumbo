@@ -2,13 +2,19 @@
 
  :dns
  {:servers
-  [{:tag "proxy" :type "https" :server "1.1.1.1" :detour "shadowsocs-out"}
-   {:tag "direct" :type "https" :server "223.5.5.5" :detour "direct-out"}
-   {:tag "block" :type "hosts" :path [] :predefined {}}
-   {:type "local"}]
+  [{:tag "cloudflare" :type "https" :server "1.1.1.1" :detour "vless-out"}
+   {:tag "alibaba" :type "https" :server "223.5.5.5"}
+   {:tag "block" :type "local"}]
   :rules
-  [{:rule_set ["geosite-cn"] :server "direct"}
-   {:rule_set ["category-ads-all"] :server "block"}]
+  [{:rule_set "geosite-geolocation-cn" :server "alibaba"}
+   {:type "logical"
+    :mode "and"
+    :rules [{:rule_set "geosite-geolocation-!cn" :invert true}
+            {:rule_set "geoip-cn"}]
+    :server "cloudflare"
+    :client_subnet "223.5.5.5/24"}
+   {:rule_set "category-ads-all" :action "reject"}]
+  :final "cloudflare"
   ;; prefer_ipv4 prefer_ipv6 ipv4_only ipv6_only
   :strategy "prefer_ipv4"}
 
@@ -16,13 +22,11 @@
  [;; tun inbound
   {:tag "tun-in"
    :type "tun"
-   :address ["172.18.0.1/30" "fdfe:dcba:9876::1/126"]
-   :route_address ["0.0.0.0/1" "128.0.0.0/1" "::/1" "8000::/1"]
-   :route_exclude_address ["192.168.0.0/16" "10.0.0.0/8" "172.16.0.0/12" "fc00::/7"]
+   :address ["172.18.0.1/30" #_"fdfe:dcba:9876::1/126" #_ipv6_is_problematic]
    :auto_route true
    :strict_route true}
   ;; http/socks inbound
-  {:tag "mixed-in"
+  #_{:tag "mixed-in"
    :type "mixed"
    :listen "127.0.0.1"
    :listen_port 10808
@@ -39,7 +43,7 @@
    :tls
    {:enabled true
     :server_name nil
-    :utls {:enabled true :fingerprint "firefox"}
+    :utls {:enabled true :fingerprint nil}
     :reality {:enabled true :public_key nil :short_id nil}}}
   {:tag "direct-out" :type "direct"}]
 
@@ -47,24 +51,35 @@
  {:rules
   [{:action "sniff"}
    {:protocol "dns" :action "hijack-dns"}
-   {:rule_set ["category-ads-all"] :action "reject"}
-   {:rule_set ["geosite-geolocation-!cn"] :outbound "vless-out"}
-   {:rule_set ["geoip-cn" "geosite-cn"] :outbound "direct-out"}
+   {:rule_set "geosite-geolocation-!cn" :outbound "vless-out"}
+   {:rule_set "geosite-geolocation-cn" :outbound "direct-out"}
+   {:type "logical"
+    :mode "and"
+    :rules [{:rule_set "geoip-cn"}
+            {:rule_set "geosite-geolocation-!cn" :invert true}]
+    :outbound "direct-out"}
    {:ip_is_private true :outbound "direct-out"}]
   :rule_set
-  [{:tag "geosite-geolocation-!cn"
+  [{:tag "geosite-geolocation-cn"
+    :type "remote"
+    :format "binary"
+    ;; RAW link
+    ;; https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-cn.srs
+    :url "https://fastly.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-geolocation-cn.srs"
+    :download_detour "direct-out"}
+   {:tag "geosite-geolocation-!cn"
     :type "remote"
     :format "binary"
     ;; RAW link
     ;; https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-!cn.srs
     :url "https://fastly.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-geolocation-!cn.srs"
     :download_detour "direct-out"}
-   {:tag "geosite-cn"
+   {:tag "geoip-cn"
     :type "remote"
     :format "binary"
     ;; RAW link
-    ;; https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs
-    :url "https://fastly.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-cn.srs"
+    ;; https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geoip-cn.srs
+    :url "https://fastly.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geoip-cn.srs"
     :download_detour "direct-out"}
    {:tag "geoip-cn"
     :type "remote"
@@ -73,15 +88,15 @@
     ;; https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs
     :url "https://fastly.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-cn.srs"
     :download_detour "direct-out"}
-   {:tag "category-ads-all",
+   {:tag "geosite-category-ads-all",
     :type "remote",
     :format "binary",
     ;; RAW link
     ;; https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs
     :url "https://fastly.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-category-ads-all.srs",
     :download_detour "direct-out"}]
-  :auto_detect_interface true
-  :default_domain_resolver "direct"}
+  :default_domain_resolver "alibaba"
+  :auto_detect_interface true}
 
  ;; save rule-set cache
- :experimental {:cache_file {:enabled true}}}
+ :experimental {:cache_file {:enabled true :store_rdrc true}}}
