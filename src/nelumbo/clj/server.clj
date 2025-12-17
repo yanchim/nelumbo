@@ -1,6 +1,7 @@
 (ns nelumbo.clj.server
   (:require
    [nelumbo.clj.core :as core]
+   [clojure.edn :as edn]
    [clojure.spec.alpha :as s]
    [clojure.tools.logging :as log]
    [muuntaja.core :as m]
@@ -15,46 +16,36 @@
    [ring.adapter.jetty :as jetty]))
 
 (s/def ::name string?)
-(s/def ::shadowtls boolean?)
-(s/def ::vless boolean?)
-(s/def ::cn boolean?)
-(s/def ::v1_11 boolean?)
+(s/def ::role #{"client" "server"})
+(s/def ::backend #{"sing-box" "xray"})
+(s/def ::protocol #{"vless" "shadowtls"})
 
 (s/def ::subscribe
   (s/keys :req-un [::name]
-          :opt-un [::shadowtls ::vless]))
+          :opt-un [::role ::backend ::protocol]))
 
 (comment
-  (s/valid? ::subscribe {:name "tong" :shadowtls true})
+  (s/valid? ::subscribe {:name "tong" :protocol 1})
   :done)
 
 (defn- ping [_]
   {:status 200
    :body {:hello "world"}})
 
+(defn- get-user-config [name backend protocol]
+  {})
+
 (defn- subscribe-get [query]
-  (let [{:keys [name shadowtls vless]} query
-        config (cond
-                 :else
-                 (core/read-resource "proxy/singbox/shadowtls/client.edn"))
-        password ""]
-    {:status 200
-     :body (-> config
-               clojure.edn/read-string)}
-    ;; (if cn
-    ;;   {:status 200
-    ;;    :body {:config config}}
-    ;;   {:status 200
-    ;;    :body (update-in
-    ;;           config
-    ;;           [:outbounds]
-    ;;           (fn [outbounds]
-    ;;             (map (fn [outbound]
-    ;;                    (if (= (:type outbound) "shadowtls")
-    ;;                      (assoc outbound :password password)
-    ;;                      outbound))
-    ;;                  outbounds)))})
-    ))
+  (let [{:keys [name role backend protocol]
+         :or {role "client" backend "singbox" protocol "vless"}} query
+        base-config (-> (str "proxy/" backend "/" role ".edn")
+                        core/read-resource
+                        edn/read-string)
+        protocol-config (-> (str "proxy/" backend "/" protocol "/client.edn")
+                            core/read-resource
+                            edn/read-string)
+        user-config (or (get-user-config name backend protocol) {})]
+    {:status 200 :body (merge base-config protocol-config user-config)}))
 
 (def root-routes
   [""
@@ -74,11 +65,13 @@
            :handler (openapi/create-openapi-handler)}}]])
 
 (def api-routes
-  ["/api" {:tags ["API"]}
-   ["/subscribe" {:get {:parameters {:query ::subscribe}
-                        :responses {200 {}}
-                        :handler (fn [{{query :query} :parameters}]
-                                   (subscribe-get query))}}]])
+  ["/api"
+   ["/v1"
+    ["/subscribe" {:get {:tags ["Subscription"]
+                         :parameters {:query ::subscribe}
+                         :responses {200 {}}
+                         :handler (fn [{{query :query} :parameters}]
+                                    (subscribe-get query))}}]]])
 
 (def secure-routes
   ["/secure" {:tags ["SECURE"]}])
@@ -92,7 +85,7 @@
             :muuntaja   m/instance
             :middleware [openapi/openapi-feature
                          parameters/parameters-middleware ; decoding query & form params
-                         muuntaja/format-middleware       ; content negotiation
+                         muuntaja/format-middleware       ; content-negotiation, request & response
                          exception/exception-middleware   ; converting exceptions to HTTP responses
                          rrc/coerce-request-middleware
                          rrc/coerce-response-middleware]}})

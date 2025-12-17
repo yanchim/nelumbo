@@ -1,0 +1,90 @@
+{:log {:level "info" :timestamp true :disabled false}
+
+ :dns
+ {:servers
+  [{:tag "cloudflare" :type "https" :server "1.1.1.1" :detour "proxy-out"}
+   {:tag "alibaba" :type "https" :server "223.5.5.5"}
+   {:tag "block" :type "local"}]
+  :rules
+  [{:rule_set "geosite-geolocation-cn" :server "alibaba"}
+   {:type "logical"
+    :mode "and"
+    :rules [{:rule_set "geosite-geolocation-!cn" :invert true}
+            {:rule_set "geoip-cn"}]
+    :server "cloudflare"
+    :client_subnet "223.5.5.5/24"}
+   {:rule_set "category-ads-all" :action "reject"}]
+  :final "cloudflare"
+  ;; prefer_ipv4 prefer_ipv6 ipv4_only ipv6_only
+  :strategy "prefer_ipv4"}
+
+ :inbounds
+ [;; tun inbound
+  {:tag "tun-in"
+   :type "tun"
+   :address ["172.18.0.1/30" #_"fdfe:dcba:9876::1/126" #_ipv6_is_problematic]
+   :auto_route true
+   :strict_route true}
+  ;; http/socks inbound
+  #_{:tag "mixed-in"
+   :type "mixed"
+   :listen "127.0.0.1"
+   :listen_port 10808
+   :users []}]
+
+ :outbounds
+ []
+
+ :route
+ {:rules
+  [{:action "sniff"}
+   {:protocol "dns" :action "hijack-dns"}
+   {:rule_set "geosite-geolocation-!cn" :outbound "proxy-out"}
+   {:rule_set "geosite-geolocation-cn" :outbound "direct-out"}
+   {:type "logical"
+    :mode "and"
+    :rules [{:rule_set "geoip-cn"}
+            {:rule_set "geosite-geolocation-!cn" :invert true}]
+    :outbound "direct-out"}
+   {:ip_is_private true :outbound "direct-out"}]
+  :rule_set
+  [{:tag "geosite-geolocation-cn"
+    :type "remote"
+    :format "binary"
+    ;; RAW link
+    ;; https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-cn.srs
+    :url "https://fastly.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-geolocation-cn.srs"
+    :download_detour "direct-out"}
+   {:tag "geosite-geolocation-!cn"
+    :type "remote"
+    :format "binary"
+    ;; RAW link
+    ;; https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-!cn.srs
+    :url "https://fastly.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-geolocation-!cn.srs"
+    :download_detour "direct-out"}
+   {:tag "geoip-cn"
+    :type "remote"
+    :format "binary"
+    ;; RAW link
+    ;; https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geoip-cn.srs
+    :url "https://fastly.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geoip-cn.srs"
+    :download_detour "direct-out"}
+   {:tag "geoip-cn"
+    :type "remote"
+    :format "binary"
+    ;; RAW link
+    ;; https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs
+    :url "https://fastly.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-cn.srs"
+    :download_detour "direct-out"}
+   {:tag "geosite-category-ads-all",
+    :type "remote",
+    :format "binary",
+    ;; RAW link
+    ;; https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs
+    :url "https://fastly.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-category-ads-all.srs",
+    :download_detour "direct-out"}]
+  :default_domain_resolver "alibaba"
+  :auto_detect_interface true}
+
+ ;; save rule-set cache
+ :experimental {:cache_file {:enabled true :store_rdrc true}}}

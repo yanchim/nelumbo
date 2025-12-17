@@ -1,0 +1,17 @@
+{:outbounds
+ [{:tag "proxy-out"
+   :type "shadowsocks"
+   :detour "shadowtls-out"
+   :method "2022-blake3-aes-128-gcm"
+   :password nil
+   :multiplex {:enabled true}}
+  {:tag "shadowtls-out"
+   :type "shadowtls"
+   :version 3
+   :server nil
+   :server_port nil
+   :password nil
+   :tls {:enabled true
+         :server_name nil
+         :utls {:enabled true :fingerprint nil}}}
+  {:tag "direct-out" :type "direct"}]}
