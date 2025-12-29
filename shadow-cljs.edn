@@ -1,6 +1,6 @@
 ;; shadow-cljs configuration
 {:deps
- true
+ {:aliases [:dev]}
 
  :dependencies
  []
