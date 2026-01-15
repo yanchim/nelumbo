@@ -17,7 +17,7 @@
 
 (s/def ::name string?)
 (s/def ::role #{"client" "server"})
-(s/def ::backend #{"sing-box" "xray"})
+(s/def ::backend #{"singbox" "xray"})
 (s/def ::protocol #{"vless" "shadowtls"})
 
 (s/def ::subscribe
@@ -38,13 +38,13 @@
 (defn- subscribe-get [query]
   (let [{:keys [name role backend protocol]
          :or {role "client" backend "singbox" protocol "vless"}} query
-        base-config (-> (str "proxy/" backend "/" role ".edn")
-                        core/read-resource
-                        edn/read-string)
-        protocol-config (-> (str "proxy/" backend "/" protocol "/client.edn")
-                            core/read-resource
+        base-config     (-> (core/read-resource
+                             "proxy" backend (str role ".edn"))
                             edn/read-string)
-        user-config (or (get-user-config name backend protocol) {})]
+        protocol-config (-> (core/read-resource
+                             "proxy" backend protocol "client.edn")
+                            edn/read-string)
+        user-config     (or (get-user-config name backend protocol) {})]
     {:status 200 :body (merge base-config protocol-config user-config)}))
 
 (def root-routes
@@ -107,7 +107,7 @@
 
 (defn start! [& [port dev]]
   (stop!)
-  (let [port (or port 5477)
+  (let [port (or port 2557)
         srv (jetty/run-jetty #'app {:port port :join? false})]
     (log/info "Server started on port" port)
     (reset! server srv)))
