@@ -1,0 +1,56 @@
+{:log {:loglevel "info"}
+
+ :dns
+ {:servers
+  [;; Foreign domains use foreign DNS queries
+   {:address "1.1.1.1" :domains ["geosite:geolocation-!cn"]}
+   ;; Domestic domains use domestic DNS queries, expecting a domestic
+   ;; IP return. If not a domestic IP, discard and use the next query
+   {:address "223.5.5.5" :domains ["geosite:cn"] :expectIPs ["geoip:cn"]}
+   ;; As a backup for above, perform a secondary query for domestic
+   ;; websites
+   {:address "114.114.114.114" :domains ["geosite:cn"]}
+   ;; Final backup: if all above fail, use local machine DNS
+   "localhost"]}
+
+ :routing
+ {:domainStrategy "IPIfNonMatch"
+  :rules
+  [;; Ad domain blocking
+   {:domain ["geosite:category-ads-all"]
+    :outboundTag "block-out"}
+   ;; Domestic domains direct connection
+   {:domain ["geosite:cn"]
+    :outboundTag "direct-out"}
+   ;; Foreign domains proxy
+   {:domain ["geosite:geolocation-!cn"]
+    :outboundTag "vless-out"}
+   ;; Traffic for domestic DNS query "223.5.5.5" is split to go
+   ;; through direct outbound
+   {:ip ["223.5.5.5"]
+    :outboundTag "direct-out"}
+   ;; Domestic IPs direct connection
+   {:domain ["geoip:cn" "geoip:private"]
+    :outboundTag "direct-out"}
+   ;; Default Rule In Xray, any traffic that does not match the
+   ;; above routing rules will default to using the first
+   ;; Outbound. So be sure to put the VPS forwarding outbound first
+   ]}
+
+ :inbounds
+ [;; socks inbound
+  {:tag "socks-in"
+   :listen "127.0.0.1"
+   :port 10808
+   :protocol "socks"
+   :settings {:udp true}}
+  ;; A few APPs are incompatible with socks protocol and need http
+  ;; protocol for forwarding, use the port below
+  {:tag "http-in"
+   :type "http"
+   :listen "127.0.0.1"
+   :port 10809}]
+
+ :outbounds
+ [{:tag "direct-out" :protocol "freedom"}
+  {:tag "block-out" :protocol "blackhole"}]}

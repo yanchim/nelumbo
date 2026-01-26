@@ -13,27 +13,10 @@
             {:rule_set "geoip-cn"}]
     :server "cloudflare"
     :client_subnet "223.5.5.5/24"}
-   {:rule_set "category-ads-all" :action "reject"}]
+   {:rule_set "geosite-category-ads-all" :action "reject"}]
   :final "cloudflare"
   ;; prefer_ipv4 prefer_ipv6 ipv4_only ipv6_only
   :strategy "prefer_ipv4"}
-
- :inbounds
- [;; tun inbound
-  {:tag "tun-in"
-   :type "tun"
-   :address ["172.18.0.1/30" "fdfe:dcba:9876::1/126"]
-   :auto_route true
-   :strict_route true}
-  ;; http/socks inbound
-  #_{:tag "mixed-in"
-   :type "mixed"
-   :listen "127.0.0.1"
-   :listen_port 10808
-   :users []}]
-
- :outbounds
- []
 
  :route
  {:rules
@@ -41,6 +24,7 @@
    {:protocol "dns" :action "hijack-dns"}
    {:rule_set "geosite-geolocation-!cn" :outbound "proxy-out"}
    {:rule_set "geosite-geolocation-cn" :outbound "direct-out"}
+   {:rule_set "geosite-category-ads-all" :action "reject"}
    {:type "logical"
     :mode "and"
     :rules [{:rule_set "geoip-cn"}
@@ -62,12 +46,12 @@
     ;; https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-!cn.srs
     :url "https://fastly.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-geolocation-!cn.srs"
     :download_detour "direct-out"}
-   {:tag "geoip-cn"
+   {:tag "geosite-cn"
     :type "remote"
     :format "binary"
     ;; RAW link
-    ;; https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geoip-cn.srs
-    :url "https://fastly.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geoip-cn.srs"
+    ;; https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs
+    :url "https://fastly.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-cn.srs"
     :download_detour "direct-out"}
    {:tag "geoip-cn"
     :type "remote"
@@ -85,6 +69,26 @@
     :download_detour "direct-out"}]
   :default_domain_resolver "alibaba"
   :auto_detect_interface true}
+
+ :inbounds
+ [;; tun inbound
+  {:tag "tun-in"
+   :type "tun"
+   :interface_name "singtun0"
+   :address ["172.18.0.1/30" "fdfe:dcba:9876::1/126"]
+   :mtu 1500
+   :auto_route true
+   :strict_route true
+   :sniff true}
+  ;; http/socks inbound
+  #_{:tag "mixed-in"
+   :type "mixed"
+   :listen "127.0.0.1"
+   :listen_port 10808
+   :users []}]
+
+ :outbounds
+ []
 
  ;; save rule-set cache
  :experimental {:cache_file {:enabled true :store_rdrc true}}}

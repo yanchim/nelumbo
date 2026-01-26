@@ -1,0 +1,31 @@
+{:log
+ {:loglevel "info"
+  :access "/var/log/xray/access.log"
+  :error "/var/log/xray/error.log"}
+
+ :dns
+ {:servers
+  [;; Prefer 1.1.1.1 DoH query, sacrifices speed but prevents ISP snooping
+   "https+local://1.1.1.1/dns-query"
+   "localhost"]}
+
+ :routing
+ {:domainStrategy
+  "IPIfNonMatch"
+
+  :rules
+  [{;; Routing condition: rules named "private" in the geoip file (local)
+    :ip ["geoip:private"] ; Routing condition: rules named "private" in the geoip file
+    :outboundTag "block-out"}
+   {;; Prevent server from directly connecting to domestic (CN) IPs
+    :ip ["geoip:cn"]
+    :outboundTag "block-out"}
+   {;; Block ads
+    :domain ["geosite:category-ads-all"] ; Routing condition: rules named "category-ads-all" in the geosite file
+    :outboundTag "block-out"}]}
+
+ :inbounds []
+
+ :outbounds
+ [{:tag "direct-out" :protocol "freedom"}
+  {:tag "block-out" :protocol "blackhole"}]}

@@ -3,6 +3,26 @@
        :output "/var/log/sing-box/server.log"
        :disabled false}
 
+ :route
+ {:rules
+  [{:rule_set ["geosite-category-ads-all" "geoip-cn"] :action "reject"}
+   {:ip_is_private true :action "reject"}]
+
+  :rule_set
+  [{:tag "geoip-cn"
+    :type "remote"
+    :format "binary"
+    ;; RAW link
+    ;; https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs
+    :url "https://fastly.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-cn.srs"
+    :download_detour "direct-out"}
+   {:tag "geosite-category-ads-all"
+    :type "remote"
+    :format "binary"
+    ;; RAW link
+    ;; https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs
+    :url "https://fastly.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-category-ads-all.srs"}]}
+
  :inbounds []
 
  :outbounds [{:tag "direct-out" :type "direct"}]}
